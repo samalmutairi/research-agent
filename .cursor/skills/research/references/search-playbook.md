@@ -14,6 +14,18 @@ Search-only. No downloads, no PDFs, no browser. **Spend tokens on selection, not
 
 Stop as soon as **two** primary HTML sources confirm the answer. Unused fetch budget is success, not a leftover to spend.
 
+## Effort tiers (stop rules inside the caps)
+
+Pick the tier before searching. Caps are a ceiling, not a target.
+
+| Tier | When | Budget |
+| --- | --- | --- |
+| a | Single fact, canonical source known (arXiv ID, RFC number, official docs URL) | Go direct; at most 1 WebSearch to confirm currency |
+| b | Single fact, source unknown | Up to 2 WebSearch; stop at first primary confirmation; 2nd source only if recency-sensitive or sources disagree |
+| c | Comparison / multi-claim | Up to 4 WebSearch, one parallel turn |
+
+Tier a/b inbox notes may be short form (≤5 lines: date, question, claim(s) with URL, gap); tier c uses `templates/finding.md`.
+
 ## Token rules
 
 - Prefer WebSearch snippets. Fetch only when a snippet is too thin to cite a claim.

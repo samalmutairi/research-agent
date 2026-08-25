@@ -24,29 +24,43 @@ if rg -i -n --fixed-strings "${RG_GLOBS[@]}" -- "$query" "$HUB/knowledge" "$HUB/
   exit 0
 fi
 
-# Pass 2: files containing ALL words, in any order.
+# Pass 2: files containing the query words in any order. Words that match
+# nothing anywhere (synonyms the notes don't use, e.g. "dim" vs "hidden
+# size") are dropped rather than forcing a miss, as long as a majority of
+# the original words still match and co-occur in the same file.
 [[ ${#words[@]} -gt 1 ]] || exit 1
 
+matched_words=()
+dropped_words=()
 files=""
 first=1
 for word in "${words[@]}"; do
   matches="$(rg -il --fixed-strings "${RG_GLOBS[@]}" -- "$word" "$HUB/knowledge" "$HUB/inbox" 2>/dev/null || true)"
   if [[ -z "$matches" ]]; then
-    exit 1
+    dropped_words+=("$word")
+    continue
   fi
+  matched_words+=("$word")
   if [[ $first -eq 1 ]]; then
     files="$matches"
     first=0
   else
     files="$(comm -12 <(sort <<<"$files") <(sort <<<"$matches") || true)"
-    [[ -n "$files" ]] || exit 1
   fi
 done
+
+[[ ${#matched_words[@]} -gt 0 ]] || exit 1
+(( ${#matched_words[@]} * 2 > ${#words[@]} )) || exit 1
+[[ -n "$files" ]] || exit 1
+
+if [[ ${#dropped_words[@]} -gt 0 ]]; then
+  echo "note: dropped words with no matches anywhere: ${dropped_words[*]}"
+fi
 
 while IFS= read -r f; do
   [[ -n "$f" ]] || continue
   echo "== $f"
-  for word in "${words[@]}"; do
+  for word in "${matched_words[@]}"; do
     rg -i -n --fixed-strings "${RG_GLOBS[@]}" --max-count 2 -- "$word" "$f" || true
   done | awk '!seen[$0]++'
 done <<<"$files"
