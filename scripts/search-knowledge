@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HUB="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: search-knowledge <query>" >&2
+  exit 2
+fi
+
+if ! command -v rg >/dev/null 2>&1; then
+  echo "rg (ripgrep) is required" >&2
+  exit 2
+fi
+
+query="$*"
+read -ra words <<<"$query"
+
+# Binary documents live in inbox/files; search only their text sidecars.
+RG_GLOBS=(-g '!*.pdf' -g '!*.docx' -g '!*.pptx' -g '!*.xlsx' -g '!*.zip')
+
+# Pass 1: exact phrase.
+if rg -i -n --fixed-strings "${RG_GLOBS[@]}" -- "$query" "$HUB/knowledge" "$HUB/inbox" 2>/dev/null; then
+  exit 0
+fi
+
+# Pass 2: files containing ALL words, in any order.
+[[ ${#words[@]} -gt 1 ]] || exit 1
+
+files=""
+first=1
+for word in "${words[@]}"; do
+  matches="$(rg -il --fixed-strings "${RG_GLOBS[@]}" -- "$word" "$HUB/knowledge" "$HUB/inbox" 2>/dev/null || true)"
+  if [[ -z "$matches" ]]; then
+    exit 1
+  fi
+  if [[ $first -eq 1 ]]; then
+    files="$matches"
+    first=0
+  else
+    files="$(comm -12 <(sort <<<"$files") <(sort <<<"$matches") || true)"
+    [[ -n "$files" ]] || exit 1
+  fi
+done
+
+while IFS= read -r f; do
+  [[ -n "$f" ]] || continue
+  echo "== $f"
+  for word in "${words[@]}"; do
+    rg -i -n --fixed-strings "${RG_GLOBS[@]}" --max-count 2 -- "$word" "$f" || true
+  done | awk '!seen[$0]++'
+done <<<"$files"

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HUB="$(cd "$(dirname "$0")/.." && pwd)"
+MAX_BYTES=$((25 * 1024 * 1024))
+
+usage() {
+  echo "Usage: fetch-source <https-url> [slug]" >&2
+  exit 2
+}
+
+[[ $# -ge 1 ]] || usage
+
+url="$1"
+slug="${2:-}"
+
+if [[ "$url" != https://* ]]; then
+  echo "HTTPS only: refusing $url" >&2
+  exit 2
+fi
+
+if [[ -z "$slug" ]]; then
+  slug="$(printf '%s' "$url" | sed -E 's#https://##; s#[^a-zA-Z0-9]+#-#g; s/^-+//; s/-+$//' | cut -c1-60)"
+fi
+[[ -n "$slug" ]] || slug="download"
+
+dir="$HUB/inbox/files/$slug"
+mkdir -p "$dir"
+
+filename="$(basename "${url%%\?*}")"
+filename="$(printf '%s' "$filename" | tr -cd 'a-zA-Z0-9._-' | cut -c1-120)"
+[[ -n "$filename" ]] || filename="download"
+
+out="$dir/$filename"
+
+curl -fsSL --proto '=https' --proto-redir '=https' --max-filesize "$MAX_BYTES" \
+  -A "ResearchAgent/1.0" \
+  -o "$out" \
+  -- "$url"
+
+echo "$out"

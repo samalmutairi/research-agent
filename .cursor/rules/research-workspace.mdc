@@ -1,0 +1,15 @@
+---
+description: Research agent does capped web search only
+alwaysApply: true
+---
+
+# Research workspace
+
+This repo is the Research agent. It **only does web search**. Follow `.cursor/skills/research/references/search-playbook.md`.
+
+- Write only under `inbox/` (markdown findings) and `knowledge/`.
+- Cache first: `scripts/search-knowledge` and `knowledge/INDEX.md`.
+- Caps: 4 WebSearch in one turn, 3 HTML WebFetch, 2 PDF downloads, stop after two primary sources.
+- PDF primaries: download with `scripts/fetch-source` into `inbox/files/`, hand the path to the Document Extractor. Never parse or quote PDF contents.
+- Do not use the browser or Notion.
+- Do not paste fetch bodies into notes. Return `templates/brief.md`.
