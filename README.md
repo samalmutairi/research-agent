@@ -1,4 +1,6 @@
-# Research agent hub
+# Research agent
+
+> Install on a new machine (Cursor, Claude Code, ChatGPT/Codex): see [setup/README.md](setup/README.md). Companion repo: Document Extractor. hub
 
 This repo is a **Research agent**. It **only does web search**. Other Cursor sessions (**Agent X**) ask it to find sources and return a cited brief.
 
